@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:tx="http://www.springframework.org/schema/tx"
+	   xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	   xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	   xsi:schemaLocation="http://www.springframework.org/schema/jdbc
+						   http://www.springframework.org/schema/jdbc/spring-jdbc-4.2.xsd
+						   http://mybatis.org/schema/mybatis-spring
+						   http://mybatis.org/schema/mybatis-spring-1.2.xsd
+						   http://www.springframework.org/schema/beans
+						   https://www.springframework.org/schema/beans/spring-beans.xsd
+						   http://www.springframework.org/schema/tx
+						   http://www.springframework.org/schema/tx/spring-tx-4.2.xsd">
+
+	<!-- dataSource(SqlDeveloper에 접근 하기 위한 설정. 넌 오라클 url id가 xe인지 확인하고, 아이디랑 비밀번호만 작성 해라.) -->
+	<bean id="dataSourceSpied" 
+		  class="org.apache.commons.dbcp.BasicDataSource"
+		  destroy-method="close">
+		  <property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		  <property name="url" value="jdbc:oracle:thin:@localhost:1521:xe" />
+		  <property name="username" value="gyjdb" />
+		  <property name="password" value="tiger" />
+	</bean>
+
+	<!-- Log4j Data Formatter (프로젝트 런타임 동안 내가 요청한 Sql이 콘솔에 찍힌다. 신경 쓰지 마셈.) -->
+	<bean id="dataSource-oracle" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		  <constructor-arg ref="dataSourceSpied" />
+		  <property name="logFormatter"> 
+			  <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				  <property name="loggingType" value="MULTI_LINE" />
+				  <property name="sqlPrefix" value="SQL : "/>
+			  </bean>
+		  </property>
+	</bean>
+
+ 	<bean id="sqlSessionFactory"
+		  class="org.mybatis.spring.SqlSessionFactoryBean">
+		  <property name="dataSource" ref="dataSourceSpied" /> 
+		  <property name="configLocation" value="classpath:/mybatis-config.xml" />
+		  <property name="mapperLocations" value="classpath:/sqlmap/*.xml" />
+	</bean>
+
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache"> 
+		<constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory" /> 
+	</bean>
+
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		  <property name="basePackage" value="com.spring.app.dao" />
+	</bean>
+
+	<bean id="transactionManager"
+		  class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		  <property name="dataSource" ref="dataSourceSpied" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+
+</beans>
